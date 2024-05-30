@@ -52,8 +52,13 @@ func ConvertStringToTime(
 	text string,
 ) (duration time.Duration) {
 	regexpTime := regexp.MustCompile(`P\d{1,}DT|[PT]`)
-	timeString := regexpTime.ReplaceAllString(text, "")
-	duration, err := time.ParseDuration(strings.ToLower(timeString))
+	regexpString := regexpTime.ReplaceAllString(text, "")
+	lowerString := strings.ToLower(regexpString)
+	// https://en.wikipedia.org/wiki/ISO_8601#Durations: "PT0S" or "P0D" represents 0s
+	if lowerString == "0d" {
+		lowerString = "0s"
+	}
+	duration, err := time.ParseDuration(strings.ToLower(lowerString))
 	if err != nil {
 		panic(err)
 	}

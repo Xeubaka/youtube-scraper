@@ -50,12 +50,10 @@ func OptionMenu(
 			PrintText(warning)
 		}
 
-		fmt.Println("Choose an option:")
-		fmt.Println("1 - Top 5 founded words")
-		fmt.Println("2 - Calculate time to watch all videos") //first 200 videos founded
-		// fmt.Println("3 - Search again") //maybe?
-		// fmt.Println("4 - Calculate for a different time") //maybe?
-		fmt.Println("9 - Exit")
+		fmt.Println(CHOOSE_OPTION_QUESTION)
+		fmt.Println(OPTION_1_TOP_FIVE)
+		fmt.Println(OPTION_2_TIME_SPENDED) //first 200 videos founded
+		fmt.Println(OPTION_9_EXIT)
 
 		text := ReadInput()
 

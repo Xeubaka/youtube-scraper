@@ -18,6 +18,9 @@ var (
 const baseURL = "https://www.googleapis.com/youtube/v3/"
 
 func SetApiKey(key string) {
+	if len(key) == 0 {
+		log.Fatal("API_KEY not founded")
+	}
 	apiKey = key
 }
 

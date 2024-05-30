@@ -13,8 +13,7 @@ func TimeSpendCounter(
 	dailyVideoWatchChan chan map[int][]map[string]time.Duration,
 	totalDurationChan chan time.Duration,
 ) {
-	day := 1
-	var interator int
+	var day int
 	var dayTimeCounter time.Duration
 	var totalDurationTime time.Duration
 	videoDayMap := make(map[int][]map[string]time.Duration)
@@ -22,7 +21,17 @@ func TimeSpendCounter(
 		videoMap := make(map[string]time.Duration)
 		videoDuration := helper.ConvertStringToTime(video.ContentDetails.Duration)
 		totalDurationTime += videoDuration
-		if (videoDuration + dayTimeCounter) <= dailyTime[interator] {
+		if (videoDuration + dayTimeCounter) <= dailyTime[day%7] {
+			dayTimeCounter += videoDuration
+			videoMap[video.ID] = videoDuration
+			videoDayMap[day] = append(videoDayMap[day], videoMap)
+		} else if videoDuration <= dailyTime[(day+1)%7] {
+			//Save current day on channel
+			dailyVideoWatchChan <- videoDayMap
+
+			//Insert video on the next day
+			dayTimeCounter, _ = time.ParseDuration("0m0s")
+			day++
 			dayTimeCounter += videoDuration
 			videoMap[video.ID] = videoDuration
 			videoDayMap[day] = append(videoDayMap[day], videoMap)
@@ -30,11 +39,6 @@ func TimeSpendCounter(
 			dayTimeCounter, _ = time.ParseDuration("0m0s")
 			day++
 			dailyVideoWatchChan <- videoDayMap
-		}
-
-		interator++
-		if interator == 7 {
-			interator = 0
 		}
 	}
 	totalDurationChan <- totalDurationTime
