@@ -17,7 +17,7 @@ func GenerateJsonTop5(
 	topDescriptionWordsChan chan []wordfinder.WordCount,
 	maxResults int,
 ) (text []byte) {
-	text = marshalWordCount(topWordsChan)
+	text = marshalWordCount(topWordsChan, maxResults)
 	return
 }
 
@@ -87,9 +87,10 @@ func GenerateTimeSpendedTextResponse(
 
 func marshalWordCount(
 	wordCountChan chan []wordfinder.WordCount,
+ maxResults int,
 ) (text []byte) {
 	wordCount := <-wordCountChan
-	text, err := json.MarshalIndent(wordCount, "", "    ")
+	text, err := json.MarshalIndent(wordCount[:maxResults], "", "    ")
 	fmt.Println(string(text))
 	if err != nil {
 		log.Fatal(err)
