@@ -87,7 +87,7 @@ func GenerateTimeSpendedTextResponse(
 
 func marshalWordCount(
 	wordCountChan chan []wordfinder.WordCount,
- maxResults int,
+	maxResults int,
 ) (text []byte) {
 	wordCount := <-wordCountChan
 	text, err := json.MarshalIndent(wordCount[:maxResults], "", "    ")
@@ -117,15 +117,11 @@ func mountParagraph(
 ) (text string) {
 	wordCount := <-wordCountChan
 	text = constTitle
-	for k, word := range wordCount {
+	for k, word := range wordCount[:maxResults] {
 		text += mountBody(
 			constTitle,
 			fmt.Sprintf("|%d° '%s': %d time(s)", k+1, word.Word, word.Count),
 		)
-
-		if k+1 == maxResults {
-			break
-		}
 	}
 	text += LINE_WITH_BRACKETS + "\n"
 	return
