@@ -2,3 +2,4 @@
 *.exe
 youtube-scraper
 .vscode
+dist/
