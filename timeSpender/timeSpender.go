@@ -47,7 +47,7 @@ func TimeSpendCounter(
 			day, timeSpendedDay = newDay(day)
 		}
 	}
-	timeSpended.TotalDays = day - 1
+	timeSpended.TotalDays = day - 2
 	timeSpended.Days = append(timeSpended.Days[:0], timeSpended.Days[1:len(timeSpended.Days)-1]...)
 
 	dailyTimeSpender <- timeSpended
