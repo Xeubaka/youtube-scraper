@@ -25,4 +25,5 @@ const (
 	TOTAL_TIME_SPENDED_HEADER  = "|  Total time spended:  |\n"
 	TOTAL_DAYS_SPENDED_DEADER  = "|  Total days spended:  |\n"
 	DAY_OF_THE_WEEK_NUMBERED   = "|------%s(%d)------|\n"
+	DAY_TOTAL_TIME_WATCHED     = "|watched time: %v|\n"
 )

@@ -21,6 +21,7 @@ func RunApplication(
 	searchQuery string,
 	dailyTime []time.Duration,
 	option int,
+	responseType string,
 ) {
 	//Search
 	searchQuery = commandline.SearchMenu(searchQuery)
@@ -49,15 +50,13 @@ func RunApplication(
 	dailyTime = commandline.TimeSpendMenu(dailyTime)
 	doneChannelTimeSpender := make(chan bool)
 	videoListWatcherChan := make(chan youtubehandler.YoutubeVideo)
-	dailyVideoWatchChan := make(chan map[int][]map[string]time.Duration, maxResults)
-	totalDurationChan := make(chan time.Duration, 1)
+	dailyTimeSpender := make(chan timespender.TimeSpended, 1)
 	go initializeTimeSpendCounter(
 		dailyTime,
 		doneChannelTimeSpender,
 		channelVideoID,
 		videoListWatcherChan,
-		dailyVideoWatchChan,
-		totalDurationChan,
+		dailyTimeSpender,
 	)
 
 	//MenuOption
@@ -68,8 +67,8 @@ func RunApplication(
 		topWordsChan,
 		topTitleWordsChan,
 		topDescriptionWordsChan,
-		totalDurationChan,
-		dailyVideoWatchChan,
+		dailyTimeSpender,
+		responseType,
 	)
 }
 
@@ -80,8 +79,8 @@ func handleOptionInteraction(
 	topWordsChan chan []wordfinder.WordCount,
 	topTitleWordsChan chan []wordfinder.WordCount,
 	topDescriptionWordsChan chan []wordfinder.WordCount,
-	totalDurationChan chan time.Duration,
-	dailyVideoWatchChan chan map[int][]map[string]time.Duration,
+	dailyTimeSpender chan timespender.TimeSpended,
+	responseType string,
 ) {
 	for option != 9 {
 		option = commandline.OptionMenu(option, defaultOptions)
@@ -97,6 +96,7 @@ func handleOptionInteraction(
 					topWordsChan,
 					topTitleWordsChan,
 					topDescriptionWordsChan,
+					responseType,
 				)
 			}
 			option = 0
@@ -110,8 +110,8 @@ func handleOptionInteraction(
 			} else {
 				checkOnTimeSpenderCounter(
 					doneChannelTimeSpender,
-					totalDurationChan,
-					dailyVideoWatchChan,
+					dailyTimeSpender,
+					responseType,
 				)
 			}
 			option = 0
@@ -154,16 +154,14 @@ func initializeTimeSpendCounter(
 	doneChannelTimeSpender chan bool,
 	channelVideoID chan string,
 	videoListWatcherChan chan youtubehandler.YoutubeVideo,
-	dailyVideoWatchChan chan map[int][]map[string]time.Duration,
-	totalDurationChan chan time.Duration,
+	dailyTimeSpender chan timespender.TimeSpended,
 ) {
 	youtubehandler.FindAllVideos(maxResults, channelVideoID, videoListWatcherChan)
 	timespender.TimeSpendCounter(
 		dailyTime,
 		doneChannelTimeSpender,
 		videoListWatcherChan,
-		dailyVideoWatchChan,
-		totalDurationChan,
+		dailyTimeSpender,
 	)
 
 }
@@ -173,23 +171,35 @@ func checkOnTop5Counter(
 	topWordsChan chan []wordfinder.WordCount,
 	topTitleWordsChan chan []wordfinder.WordCount,
 	topDescriptionWordsChan chan []wordfinder.WordCount,
+	responseType string,
 ) {
 	var text string
 	for i := 0; ; i++ {
 		commandline.CleanTerminal()
 		select {
 		case <-doneChannelTop5:
-			top5 = commandline.GenerateTop5TextResponse(
-				topWordsChan,
-				topTitleWordsChan,
-				topDescriptionWordsChan,
-				maxResultsWords,
-			)
+			if responseType == "json" {
+				top5 = string(commandline.GenerateJsonTop5(
+					topWordsChan,
+					topTitleWordsChan,
+					topDescriptionWordsChan,
+					maxResultsWords,
+				))
+			} else {
+				top5 = commandline.GenerateTop5TextResponse(
+					topWordsChan,
+					topTitleWordsChan,
+					topDescriptionWordsChan,
+					maxResultsWords,
+				)
+			}
 			text = top5
 		default:
 			text = commandline.GetLoader(i)
 		}
-		commandline.PrintText(text)
+		if responseType != "json" {
+			commandline.PrintText(text)
+		}
 		time.Sleep(1 * time.Second)
 		if len(top5) > 0 || i > 10 {
 			break
@@ -200,23 +210,30 @@ func checkOnTop5Counter(
 
 func checkOnTimeSpenderCounter(
 	doneChannelTimeSpender chan bool,
-	totalDurationChan chan time.Duration,
-	dailyVideoWatchChan chan map[int][]map[string]time.Duration,
+	dailyTimeSpender chan timespender.TimeSpended,
+	responseType string,
 ) {
 	var text string
 	for i := 0; ; i++ {
 		commandline.CleanTerminal()
 		select {
 		case <-doneChannelTimeSpender:
-			timeSpended = commandline.GenerateTimeSpendedTextResponse(
-				totalDurationChan,
-				dailyVideoWatchChan,
-			)
+			if responseType == "json" {
+				timeSpended = string(commandline.GenerateJsonTimeSpended(
+					dailyTimeSpender,
+				))
+			} else {
+				timeSpended = commandline.GenerateTimeSpendedTextResponse(
+					dailyTimeSpender,
+				)
+			}
 			text = timeSpended
 		default:
 			text = commandline.GetLoader(i)
 		}
-		commandline.PrintText(text)
+		if responseType != "json" {
+			commandline.PrintText(text)
+		}
 		time.Sleep(1 * time.Second)
 		if len(timeSpended) > 0 || i > 10 {
 			break

@@ -8,4 +8,5 @@ type Flags struct {
 	DailyTime     []time.Duration
 	Option        int
 	ApiKey        string
+	ResponseType  string
 }

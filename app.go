@@ -34,5 +34,5 @@ func init() {
 }
 
 func main() {
-	broadcaster.RunApplication(f.SearchQuery, f.DailyTime, f.Option)
+	broadcaster.RunApplication(f.SearchQuery, f.DailyTime, f.Option, f.ResponseType)
 }

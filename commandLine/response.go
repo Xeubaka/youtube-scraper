@@ -1,12 +1,25 @@
 package commandline
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"sort"
 	"time"
 	helper "youtube-scraper/helper"
+	timespender "youtube-scraper/timeSpender"
 	"youtube-scraper/wordfinder"
 )
+
+func GenerateJsonTop5(
+	topWordsChan chan []wordfinder.WordCount,
+	topTitleWordsChan chan []wordfinder.WordCount,
+	topDescriptionWordsChan chan []wordfinder.WordCount,
+	maxResults int,
+) (text []byte) {
+	text = marshalWordCount(topWordsChan)
+	return
+}
 
 func GenerateTop5TextResponse(
 	topWordsChan chan []wordfinder.WordCount,
@@ -20,43 +33,78 @@ func GenerateTop5TextResponse(
 	return
 }
 
+func GenerateJsonTimeSpended(
+	dailyTimeSpender chan timespender.TimeSpended,
+) (text []byte) {
+	text = marshalTimeSpended(dailyTimeSpender)
+	return
+}
+
 func GenerateTimeSpendedTextResponse(
-	totalDurationChan chan time.Duration,
-	dailyVideoWatchChan chan map[int][]map[string]time.Duration,
-) (timeSpended string) {
+	dailyTimeSpender chan timespender.TimeSpended,
+) (text string) {
+	timeSpended := <-dailyTimeSpender
 
-	totalDuration := <-totalDurationChan
-	timeSpended = mountBodyWithHeader(
+	text = mountBodyWithHeader(
 		TOTAL_TIME_SPENDED_HEADER,
-		fmt.Sprintf("| %v ", helper.ConvertTimeDurationToString(totalDuration)),
+		fmt.Sprintf("| %v ", timeSpended.TotalDuration),
 	)
 
-	dailyVideoWatch := <-dailyVideoWatchChan
-	orderedKeys, totalDays := orderMapforResponse(dailyVideoWatch)
-
-	timeSpended += mountBodyWithHeader(
+	text += mountBodyWithHeader(
 		TOTAL_DAYS_SPENDED_DEADER,
-		fmt.Sprintf("| %v ", totalDays),
+		fmt.Sprintf("| %v ", timeSpended.TotalDays),
 	)
-	timeSpended += LINE_WITH_BRACKETS + "\n"
+	text += LINE_WITH_BRACKETS + "\n"
 
-	for _, day := range orderedKeys {
-		videos := dailyVideoWatch[day]
+	for _, timeSpendedDay := range timeSpended.Days {
+		videos := timeSpendedDay.Videos
 
-		header := fmt.Sprintf(DAY_OF_THE_WEEK_NUMBERED, time.Weekday(day%7), day)
-		timeSpended += header
-		for _, video := range videos {
-			for key, value := range video {
-				timeSpended += mountBody(
-					header,
-					fmt.Sprintf(
-						"|id:%s|%s",
-						key,
-						helper.ConvertTimeDurationToString(value),
-					),
-				)
-			}
+		header := fmt.Sprintf(
+			DAY_OF_THE_WEEK_NUMBERED,
+			time.Weekday(timeSpendedDay.Day%7),
+			timeSpendedDay.Day,
+		)
+		text += header
+
+		text += mountBody(
+			header,
+			fmt.Sprintf("|Time Watched: %v", timeSpendedDay.TotalTimeWatched),
+		)
+
+		for _, timeSpendedVideo := range videos {
+			text += mountBody(
+				header,
+				fmt.Sprintf(
+					"|id:%s|%s",
+					timeSpendedVideo.ID,
+					timeSpendedVideo.Duration,
+				),
+			)
 		}
+	}
+	return
+}
+
+func marshalWordCount(
+	wordCountChan chan []wordfinder.WordCount,
+) (text []byte) {
+	wordCount := <-wordCountChan
+	text, err := json.MarshalIndent(wordCount, "", "    ")
+	fmt.Println(string(text))
+	if err != nil {
+		log.Fatal(err)
+	}
+	return
+}
+
+func marshalTimeSpended(
+	dailyTimeSpender chan timespender.TimeSpended,
+) (text []byte) {
+	timeSpended := <-dailyTimeSpender
+	text, err := json.MarshalIndent(timeSpended, "", "    ")
+	fmt.Println(string(text))
+	if err != nil {
+		log.Fatal(err)
 	}
 	return
 }
